@@ -1,0 +1,99 @@
+apiVersion: scaffolder.backstage.io/v1beta3
+kind: Template
+metadata:
+  name: nodejs-api-service
+  title: New Node.js API Service
+  description: |
+    Creates a new Node.js API service. This session's skeleton: render a starter
+    repo from the skeleton, publish it to GitHub, and register it in the catalog.
+    Provisioning (Terraform ECS/ALB/ECR, GitHub Actions OIDC, Slack notify) is
+    added in a later milestone where the marked placeholder is.
+  tags:
+    - nodejs
+    - api
+    - recommended
+spec:
+  owner: tetevi
+  type: service
+
+  parameters:
+    - title: Service details
+      required:
+        - name
+        - owner
+      properties:
+        name:
+          title: Service name
+          type: string
+          description: Unique name. Lowercase, dashes allowed.
+          pattern: '^[a-z0-9-]+$'
+          ui:autofocus: true
+        description:
+          title: Description
+          type: string
+          description: What does this service do?
+        owner:
+          title: Owner
+          type: string
+          description: Owner of the new component
+          ui:field: OwnerPicker
+          ui:options:
+            catalogFilter:
+              kind: [User, Group]
+
+    - title: Repository location
+      required:
+        - repoUrl
+      properties:
+        repoUrl:
+          title: Repository Location
+          type: string
+          ui:field: RepoUrlPicker
+          ui:options:
+            allowedHosts:
+              - github.com
+
+  steps:
+    - id: fetch-skeleton
+      name: Fetch skeleton and render
+      action: fetch:template
+      input:
+        url: ./skeleton
+        values:
+          name: ${{ parameters.name }}
+          description: ${{ parameters.description }}
+          owner: ${{ parameters.owner }}
+          destination: ${{ parameters.repoUrl | parseRepoUrl }}
+
+    - id: publish
+      name: Publish to GitHub
+      action: publish:github
+      input:
+        repoUrl: ${{ parameters.repoUrl }}
+        description: ${{ parameters.description }}
+        defaultBranch: main
+        repoVisibility: public
+
+    # =====================================================================
+    # DEFERRED PROVISIONING (not implemented this session). The full flow
+    # inserts steps here, between publish and register:
+    #   - run Terraform: ECS service + ALB + ECR in the workload account
+    #   - wire a GitHub Actions pipeline with OIDC federation into that account
+    #   - post a Slack notification on completion
+    # The skeleton intentionally stops at "create repo + register".
+    # =====================================================================
+
+    - id: register
+      name: Register in catalog
+      action: catalog:register
+      input:
+        repoContentsUrl: ${{ steps['publish'].output.repoContentsUrl }}
+        catalogInfoPath: '/catalog-info.yaml'
+
+  output:
+    links:
+      - title: Repository
+        url: ${{ steps['publish'].output.remoteUrl }}
+      - title: Open in catalog
+        icon: catalog
+        entityRef: ${{ steps['register'].output.entityRef }}

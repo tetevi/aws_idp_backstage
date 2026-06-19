@@ -111,9 +111,9 @@ catalog:
       rules:
         - allow: [Component]
 
-    # Local example template
+    # Updated
     - type: file
-      target: ../../examples/template/template.yaml
+      target: ../../templates/nodejs-api-service/template.yaml
       rules:
         - allow: [Template]
 
