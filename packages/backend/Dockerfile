@@ -12,7 +12,10 @@
 # Alternatively, there is also a multi-stage Dockerfile documented here:
 # https://backstage.io/docs/deployment/docker#multi-stage-build
 
-FROM node:24-trixie-slim
+# Pinned to 22.12.0 on purpose. Floating node:22 reintroduces the node-fetch
+# keep-alive regression (nodejs/node #63989) that caused "Premature close" on
+# catalog fetches. Do not change this to a floating tag.
+FROM node:22.12.0-bookworm-slim
 
 # Set Python interpreter for `node-gyp` to use
 ENV PYTHON=/usr/bin/python3

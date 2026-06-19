@@ -1,19 +1,18 @@
 apiVersion: scaffolder.backstage.io/v1beta3
 kind: Template
 metadata:
-  name: nodejs-api-service
+  name: node-api-service
   title: New Node.js API Service
-  description: |
-    Creates a new Node.js API service. This session's skeleton: render a starter
-    repo from the skeleton, publish it to GitHub, and register it in the catalog.
-    Provisioning (Terraform ECS/ALB/ECR, GitHub Actions OIDC, Slack notify) is
-    added in a later milestone where the marked placeholder is.
+  description: >
+    Scaffolds a minimal Node.js API service, creates a GitHub repository
+    under tetevi, pushes the starter code, and registers the service in the
+    Backstage catalog.
   tags:
-    - nodejs
-    - api
     - recommended
+    - nodejs
+    - aws
 spec:
-  owner: tetevi
+  owner: user:default/tetevi
   type: service
 
   parameters:
@@ -25,37 +24,29 @@ spec:
         name:
           title: Service name
           type: string
-          description: Unique name. Lowercase, dashes allowed.
-          pattern: '^[a-z0-9-]+$'
+          description: Unique name. Used for the repo name and the catalog entity.
+          pattern: '^[a-z0-9]([-a-z0-9]*[a-z0-9])?$'
           ui:autofocus: true
+          ui:help: Lowercase letters, numbers and dashes only. Example, orders-api
         description:
           title: Description
           type: string
           description: What does this service do?
+          default: A Node.js API service scaffolded by the IDP portal.
         owner:
           title: Owner
           type: string
-          description: Owner of the new component
+          description: Owner of the component in the catalog.
           ui:field: OwnerPicker
           ui:options:
             catalogFilter:
-              kind: [User, Group]
-
-    - title: Repository location
-      required:
-        - repoUrl
-      properties:
-        repoUrl:
-          title: Repository Location
-          type: string
-          ui:field: RepoUrlPicker
-          ui:options:
-            allowedHosts:
-              - github.com
+              kind:
+                - Group
+                - User
 
   steps:
-    - id: fetch-skeleton
-      name: Fetch skeleton and render
+    - id: fetch
+      name: Fetch starter skeleton
       action: fetch:template
       input:
         url: ./skeleton
@@ -63,25 +54,16 @@ spec:
           name: ${{ parameters.name }}
           description: ${{ parameters.description }}
           owner: ${{ parameters.owner }}
-          destination: ${{ parameters.repoUrl | parseRepoUrl }}
 
     - id: publish
-      name: Publish to GitHub
+      name: Create and push GitHub repo
       action: publish:github
       input:
-        repoUrl: ${{ parameters.repoUrl }}
+        repoUrl: github.com?owner=tetevi&repo=${{ parameters.name }}
         description: ${{ parameters.description }}
         defaultBranch: main
         repoVisibility: public
-
-    # =====================================================================
-    # DEFERRED PROVISIONING (not implemented this session). The full flow
-    # inserts steps here, between publish and register:
-    #   - run Terraform: ECS service + ALB + ECR in the workload account
-    #   - wire a GitHub Actions pipeline with OIDC federation into that account
-    #   - post a Slack notification on completion
-    # The skeleton intentionally stops at "create repo + register".
-    # =====================================================================
+        protectDefaultBranch: false
 
     - id: register
       name: Register in catalog
