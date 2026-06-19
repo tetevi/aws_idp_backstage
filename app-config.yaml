@@ -105,9 +105,11 @@ catalog:
   rules:
     - allow: [Component, System, API, Resource, Location]
   locations:
-    # Local example data, file locations are relative to the backend process, typically `packages/backend`
-    - type: file
-      target: ../../examples/entities.yaml
+    # ... keep the existing example file entries that are already here ...
+    - type: url
+      target: https://github.com/tetevi/aws_idp_backstage/blob/main/catalog-info.yaml
+      rules:
+        - allow: [Component]
 
     # Local example template
     - type: file
