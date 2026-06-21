@@ -6,6 +6,8 @@ backend:
   # ':7007' binds all interfaces, which the container needs so the published
   # port is reachable. Do not change this to localhost.
   listen: ':7007'
+  csp:
+    upgrade-insecure-requests: false
   database:
     client: pg
     connection:
@@ -34,12 +36,12 @@ auth:
 catalog:
   locations:
     - type: file
-      target: ./examples/entities.yaml
-    - type: file
-      target: ./examples/template/template.yaml
-      rules:
-        - allow: [Template]
-    - type: file
       target: ./examples/org.yaml
       rules:
         - allow: [User, Group]
+    - type: url
+      target: https://github.com/tetevi/aws_idp_backstage/blob/main/templates/nodejs-api-service/template.yaml
+      rules:
+        - allow: [Template]
+    - type: url
+      target: https://github.com/tetevi/new-idp-service/blob/main/catalog-info.yaml

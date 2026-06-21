@@ -56,9 +56,17 @@ resource "aws_ecs_task_definition" "backstage" {
         { name = "POSTGRES_PORT", value = "5432" },
         { name = "POSTGRES_USER", value = "backstage" },
         { name = "POSTGRES_PASSWORD", value = "changemelocal" },
-        { name = "APP_BASE_URL", value = "http://localhost:${var.backstage_port}" },
+        { name = "APP_BASE_URL", value = var.app_base_url },
       ]
       
+      healthCheck = {
+        command = ["CMD-SHELL", "node -e \"require('http').get('http://127.0.0.1:7007/healthcheck', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))\""]
+        interval    = 30
+        timeout     = 5
+        retries     = 3
+        startPeriod = 90
+      }
+
       secrets = [
         { name = "AUTH_GITHUB_CLIENT_ID", valueFrom = "arn:aws:ssm:${var.aws_region}:${data.aws_caller_identity.current.account_id}:parameter/backstage/github_client_id" },
         { name = "AUTH_GITHUB_CLIENT_SECRET", valueFrom = "arn:aws:ssm:${var.aws_region}:${data.aws_caller_identity.current.account_id}:parameter/backstage/github_client_secret" },
@@ -88,4 +96,12 @@ resource "aws_ecs_service" "backstage" {
     security_groups  = [aws_security_group.backstage.id]
     assign_public_ip = true
   }
+
+  load_balancer {
+    target_group_arn = aws_lb_target_group.backstage.arn
+    container_name   = "backstage"
+    container_port   = var.backstage_port
+  }
+
+  depends_on = [aws_lb_listener.backstage]
 }
